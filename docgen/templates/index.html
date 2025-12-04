@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e1e1e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DocGen">
+    <meta name="description" content="AI-powered document generation from text and documents">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/static/icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.svg">
+    <title>DocGen - AI Document Generator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.hugeicons.com/hugeicons.umd.js"></script>
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidenav Overlay -->
+    <div class="sidenav-overlay" id="sidenavOverlay"></div>
+
+    <!-- Sidenav -->
+    <nav class="sidenav" id="sidenav">
+        <div class="sidenav-header">
+            <h2><span style="font-family: 'Playfair Display', serif; font-weight: 700;">doc</span><span style="font-family: 'Inter', sans-serif; font-weight: 600;">gen</span></h2>
+            <button class="sidenav-close" id="closeSidenav">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <ul class="sidenav-items">
+            <li class="sidenav-item active" data-view="generate">
+                <i class="fas fa-file-alt"></i>
+                <span>Generate</span>
+            </li>
+            <li class="sidenav-item" data-view="documents">
+                <i class="fas fa-folder"></i>
+                <span>Documents</span>
+            </li>
+            <li class="sidenav-item" data-view="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </li>
+        </ul>
+        <div class="sidenav-footer">
+            <div class="stats-widget">
+                <div class="stat">
+                    <div class="stat-value" id="statDocuments">0</div>
+                    <div class="stat-label">Documents</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="statTokens">0</div>
+                    <div class="stat-label">Tokens</div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main App -->
+    <div class="app-wrapper">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <button class="hamburger" id="openSidenav">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="top-bar-title"><span style="font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 600;">doc</span><span style="font-family: 'Inter', sans-serif; font-size: 1.8rem; font-weight: 400;">gen</span></div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="app-container">
+            <!-- Generate View (Main Card) -->
+            <div class="view" id="generateView" style="display: block;">
+        <!-- Main Content Card -->
+        <div class="card main-card" style="max-width: 600px;">
+            <div class="card-title">
+                <span>Upload</span>
+                <div class="nav-buttons">
+                    <button class="nav-btn" id="prevBtn" disabled><i class="fas fa-chevron-left"></i></button>
+                    <span class="step-indicator">1 / 3</span>
+                    <button class="nav-btn" id="nextBtn" disabled><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <!-- Step Indicator (Hidden visually but used for logic if needed, or simplified) -->
+            <!-- For this design, we'll keep it simple and linear within the card -->
+
+            <!-- Section 1: Upload -->
+            <div class="section active" data-section="1">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="far fa-file-alt"></i>
+                        <i class="fas fa-plus" style="font-size: 1rem; margin-left: -10px; vertical-align: top;"></i>
+                    </div>
+                    <div class="upload-text">Drop your file(s) here or <a href="#" class="browse-link">browse</a></div>
+                    <div class="upload-subtext">Max. file size 25 MB • Optional: Skip to generate from prompt only</div>
+                </div>
+                <input type="file" id="fileInput" multiple style="display: none;">
+
+                <div id="fileList"></div>
+
+                <div class="d-flex justify-between mt-3" style="margin-top: auto; padding-top: 20px;">
+                    <button class="btn btn-secondary" id="skipUploadBtn" style="min-width: 100px;">Skip Upload</button>
+                    <button class="btn btn-primary" id="nextBtn1" disabled style="min-width: 100px;">Save & Continue</button>
+                </div>
+            </div>
+
+            <!-- Section 2: Generate Options -->
+            <div class="section" data-section="2">
+                <div class="form-group">
+                    <label for="docTitleInput" class="form-label">Document Title</label>
+                    <input type="text" id="docTitleInput" class="form-control" placeholder="My Document" value="">
+                </div>
+                
+                <div class="form-group">
+                    <label for="prompt" class="form-label">Instruction</label>
+                    <textarea class="form-control" id="prompt" placeholder="Describe what you want to generate..." rows="4"></textarea>
+                </div>
+
+                <div class="d-flex gap-3 mb-3">
+                    <div style="flex: 1;">
+                        <label for="provider" class="form-label">Provider</label>
+                        <select class="form-control" id="provider">
+                            <option value="" disabled selected>Select provider</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="model" class="form-label">Model</label>
+                        <select class="form-control" id="model">
+                            <option value="" disabled selected>Select model</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 mb-3">
+                    <div style="flex: 1;">
+                        <label for="length" class="form-label">Length</label>
+                        <select class="form-control" id="length">
+                            <option value="1">Short</option>
+                            <option value="2">Medium</option>
+                            <option value="3">Long</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-between mt-3">
+                    <button class="btn btn-secondary" id="backBtn2">Back</button>
+                    <button class="btn btn-primary" id="generateBtn">Generate</button>
+                </div>
+            </div>
+
+            <!-- Section 3: Download -->
+            <div class="section" data-section="3">
+                <div id="statusContainer" class="text-center" style="padding: 40px 0;">
+                    <!-- Status will be injected here -->
+                </div>
+                
+                <div class="d-flex justify-between mt-3">
+                    <button class="btn btn-secondary" id="startOverBtn">Start Over</button>
+                </div>
+            </div>
+        </div>
+            </div><!-- End generateView -->
+
+            <!-- Documents View -->
+            <div class="view" id="documentsView" style="display: none;">
+                <div class="card main-card" style="max-width: 600px;">
+                    <div class="card-title">
+                        <span>Documents</span>
+                    </div>
+                    <div class="documents-container">
+                        <div id="documentsEmpty" class="text-center text-muted" style="padding: 40px 20px;">
+                            <i class="fas fa-inbox" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No documents yet</p>
+                            <p style="font-size: 0.85rem;">Generate your first document to see it here</p>
+                        </div>
+                        <div id="documentsList" style="display: none;"></div>
+                    </div>
+                    <div class="mt-3">
+                        <input type="text" id="documentsSearch" class="form-control" placeholder="Search documents..." style="margin-bottom: 12px;">
+                        <div id="documentsFilter" class="documents-filter">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: var(--text-secondary);">
+                                <input type="checkbox" id="filterRecent" checked> Recent
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; color: var(--text-secondary);">
+                                <input type="checkbox" id="filterTrending"> Trending
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- End documentsView -->
+
+            <!-- Settings View -->
+            <div class="view" id="settingsView" style="display: none;">
+                <div class="card main-card" style="max-width: 600px;">
+                    <div class="card-title">
+                        <span>Settings</span>
+                    </div>
+                    <div class="settings-container">
+                        <!-- API Keys Section -->
+                        <div class="settings-section">
+                            <h3 class="settings-section-title">
+                                <i class="fas fa-key"></i> API Keys
+                            </h3>
+                            <div class="api-key-item">
+                                <div class="api-key-header">
+                                    <div class="api-key-name">
+                                        <i class="fas fa-google" style="color: #4285f4;"></i> Google Gemini
+                                    </div>
+                                    <span id="geminiStatus" class="api-status">Configured</span>
+                                </div>
+                                <div class="api-key-input">
+                                    <input type="password" id="geminiKey" class="form-control" placeholder="sk-..." style="margin-bottom: 8px;">
+                                    <button class="btn btn-secondary" id="testGemini" style="width: 100%; margin-bottom: 8px;">Test Connection</button>
+                                    <button class="btn btn-secondary" id="saveGemini" style="width: 100%;">Save Key</button>
+                                </div>
+                            </div>
+
+                            <div class="api-key-item">
+                                <div class="api-key-header">
+                                    <div class="api-key-name">
+                                        <i class="fas fa-openai" style="color: #00d084;"></i> OpenAI
+                                    </div>
+                                    <span id="openaiStatus" class="api-status">Configured</span>
+                                </div>
+                                <div class="api-key-input">
+                                    <input type="password" id="openaiKey" class="form-control" placeholder="sk-..." style="margin-bottom: 8px;">
+                                    <button class="btn btn-secondary" id="testOpenAI" style="width: 100%; margin-bottom: 8px;">Test Connection</button>
+                                    <button class="btn btn-secondary" id="saveOpenAI" style="width: 100%;">Save Key</button>
+                                </div>
+                            </div>
+
+                            <div class="api-key-item">
+                                <div class="api-key-header">
+                                    <div class="api-key-name">
+                                        <i class="fas fa-router"></i> OpenRouter
+                                    </div>
+                                    <span id="openrouterStatus" class="api-status">Configured</span>
+                                </div>
+                                <div class="api-key-input">
+                                    <input type="password" id="openrouterKey" class="form-control" placeholder="sk-..." style="margin-bottom: 8px;">
+                                    <button class="btn btn-secondary" id="testOpenRouter" style="width: 100%; margin-bottom: 8px;">Test Connection</button>
+                                    <button class="btn btn-secondary" id="saveOpenRouter" style="width: 100%;">Save Key</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preferences Section -->
+                        <div class="settings-section">
+                            <h3 class="settings-section-title">
+                                <i class="fas fa-sliders-h"></i> Preferences
+                            </h3>
+                            <div class="form-group">
+                                <label for="defaultProvider" class="form-label">Default Provider</label>
+                                <select id="defaultProvider" class="form-control">
+                                    <option value="gemini">Google Gemini</option>
+                                    <option value="openai">OpenAI</option>
+                                    <option value="openrouter">OpenRouter</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="defaultLength" class="form-label">Default Document Length</label>
+                                <select id="defaultLength" class="form-control">
+                                    <option value="1">Short</option>
+                                    <option value="2" selected>Medium</option>
+                                    <option value="3">Long</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="defaultTemperature" class="form-label">Default Creativity Level</label>
+                                <input type="range" id="defaultTemperature" class="form-control" min="0" max="2" step="0.1" value="0.7" style="cursor: pointer;">
+                                <small class="text-muted" id="tempValue">0.7</small>
+                            </div>
+                        </div>
+
+                        <!-- About Section -->
+                        <div class="settings-section">
+                            <h3 class="settings-section-title">
+                                <i class="fas fa-info-circle"></i> About
+                            </h3>
+                            <div class="about-info">
+                                <div class="about-item">
+                                    <div class="about-label">App Version</div>
+                                    <div class="about-value">1.0.0</div>
+                                </div>
+                                <div class="about-item">
+                                    <div class="about-label">PWA Status</div>
+                                    <div class="about-value" id="pwaStatus">Not installed</div>
+                                </div>
+                                <div class="about-item">
+                                    <div class="about-label">Storage Usage</div>
+                                    <div class="about-value" id="storageUsage">Loading...</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary" id="clearCacheBtn" style="width: 100%; margin-top: 12px;">Clear Cache</button>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- End settingsView -->
+        </div>
+    </div>
+    </div>
+
+    <script>
+        // Global state
+        let uploadId = null;
+        let currentSection = 1;
+        let availableProviders = {};
+        let pendingFiles = [];
+        const API_BASE = '/';
+
+        // DOM element references (to be populated in DOMContentLoaded)
+        let uploadArea, fileInput, fileList, nextBtn1, generateBtn, backBtn2, startOverBtn;
+        let promptInput, statusContainer, browseLink, providerSelect, modelSelect;
+        let prevBtn, nextBtn, stepIndicator;
+
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Query DOM elements for generate view
+            uploadArea = document.getElementById('uploadArea');
+            fileInput = document.getElementById('fileInput');
+            fileList = document.getElementById('fileList');
+            nextBtn1 = document.getElementById('nextBtn1');
+            generateBtn = document.getElementById('generateBtn');
+            backBtn2 = document.getElementById('backBtn2');
+            startOverBtn = document.getElementById('startOverBtn');
+            promptInput = document.getElementById('prompt');
+            statusContainer = document.getElementById('statusContainer');
+            browseLink = document.querySelector('.browse-link');
+            providerSelect = document.getElementById('provider');
+            modelSelect = document.getElementById('model');
+            prevBtn = document.getElementById('prevBtn');
+            nextBtn = document.getElementById('nextBtn');
+            stepIndicator = document.querySelector('.step-indicator');
+
+            // Register service worker for PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            }
+
+            // Sidenav controls
+            const sidenav = document.getElementById('sidenav');
+            const sidenavOverlay = document.getElementById('sidenavOverlay');
+            const openSidenavBtn = document.getElementById('openSidenav');
+            const closeSidenavBtn = document.getElementById('closeSidenav');
+
+            function openSidenav() {
+                sidenav.classList.add('open');
+                sidenavOverlay.classList.add('open');
+            }
+
+            function closeSidenav() {
+                sidenav.classList.remove('open');
+                sidenavOverlay.classList.remove('open');
+            }
+
+            openSidenavBtn.addEventListener('click', openSidenav);
+            closeSidenavBtn.addEventListener('click', closeSidenav);
+            sidenavOverlay.addEventListener('click', closeSidenav);
+
+            // Sidenav item navigation - Initialize AFTER DOM ready
+            const sidenavItems = document.querySelectorAll('.sidenav-item');
+            console.log('Sidenav items found:', sidenavItems.length);
+            
+            sidenavItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    console.log('Sidenav item clicked');
+                    const view = item.getAttribute('data-view');
+                    console.log('View:', view);
+                    
+                    // Update active state
+                    document.querySelectorAll('.sidenav-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+
+                    // Hide all views
+                    document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+
+                    // Show selected view
+                    if (view === 'generate') {
+                        document.getElementById('generateView').style.display = 'block';
+                    } else if (view === 'documents') {
+                        document.getElementById('documentsView').style.display = 'block';
+                        loadDocuments();
+                    } else if (view === 'settings') {
+                        document.getElementById('settingsView').style.display = 'block';
+                        initializeSettings();
+                    }
+
+                    closeSidenav();
+                });
+            });
+
+            // Initialize first view
+            document.getElementById('generateView').style.display = 'block';
+
+            // Verify DOM elements are found
+            console.log('DOM Elements:', {
+                uploadArea: !!uploadArea,
+                fileInput: !!fileInput,
+                browseLink: !!browseLink,
+                nextBtn1: !!nextBtn1
+            });
+
+            // Load available providers
+            loadProviders();
+
+            // Upload area click - just opens file picker, no API call
+            if (browseLink) {
+                browseLink.addEventListener('click', (e) => {
+                    console.log('Browse link clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (fileInput) {
+                        fileInput.click();
+                    } else {
+                        console.error('File input not found!');
+                    }
+                });
+            }
+            
+            if (uploadArea) {
+                uploadArea.addEventListener('click', (e) => {
+                    console.log('Upload area clicked', e.target);
+                    // Only trigger if clicking directly on upload area or its children (not the link)
+                    if (!browseLink || (e.target !== browseLink && !browseLink.contains(e.target))) {
+                        if (fileInput) {
+                            fileInput.click();
+                        } else {
+                            console.error('File input not found!');
+                        }
+                    }
+                });
+            } else {
+                console.error('Upload area not found!');
+            }
+
+            // File input change
+            fileInput.addEventListener('change', handleFiles);
+
+            // Drag and drop
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                handleFiles({ target: { files: e.dataTransfer.files } });
+            });
+
+            // Navigation
+            nextBtn1.addEventListener('click', async () => {
+                // If we have pending files, upload/append them first
+                if (pendingFiles && pendingFiles.length > 0) {
+                    await uploadSelectedFiles();
+                }
+
+                // Only proceed if an uploadId is present
+                if (uploadId) goToSection(2);
+            });
+            
+            // Skip upload button - go directly to generation
+            const skipUploadBtn = document.getElementById('skipUploadBtn');
+            if (skipUploadBtn) {
+                skipUploadBtn.addEventListener('click', () => {
+                    uploadId = null; // Clear any existing upload
+                    goToSection(2);
+                });
+            }
+            
+            backBtn2.addEventListener('click', () => goToSection(1));
+            startOverBtn.addEventListener('click', reset);
+            generateBtn.addEventListener('click', generateDocument);
+            
+            // Prompt input listener - enable Generate button on input
+            promptInput.addEventListener('input', () => {
+                updateNavigationButtons();
+                // Auto-fill title from prompt (first 8 words)
+                if (promptInput.value.trim().length > 0) {
+                    const autoTitle = promptInput.value.split(' ').slice(0, 8).join(' ');
+                    const docTitleInput = document.getElementById('docTitleInput');
+                    if (docTitleInput && !docTitleInput.value) {
+                        docTitleInput.value = autoTitle;
+                    }
+                }
+            });
+            
+            // Global navigation buttons
+            prevBtn.addEventListener('click', () => goToSection(currentSection - 1));
+            nextBtn.addEventListener('click', () => goToSection(currentSection + 1));
+            
+            // Keyboard navigation - Alt+Arrow keys for page navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.altKey && e.key === 'ArrowLeft' && !prevBtn.disabled) {
+                    e.preventDefault();
+                    goToSection(currentSection - 1);
+                } else if (e.altKey && e.key === 'ArrowRight' && !nextBtn.disabled) {
+                    e.preventDefault();
+                    goToSection(currentSection + 1);
+                }
+            });
+            
+            // Add keyboard hint tooltips on hover
+            const addKeyboardHint = (btn, direction) => {
+                const hint = document.createElement('div');
+                hint.className = 'keyboard-hint';
+                hint.textContent = `Alt + ${direction === 'prev' ? '←' : '→'}`;
+                hint.style.cssText = `
+                    position: absolute;
+                    background: rgba(0,0,0,0.8);
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 0.75rem;
+                    white-space: nowrap;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.2s;
+                    ${direction === 'prev' ? 'right: 100%; margin-right: 8px;' : 'left: 100%; margin-left: 8px;'}
+                    top: 50%;
+                    transform: translateY(-50%);
+                    z-index: 1000;
+                `;
+                btn.parentElement.style.position = 'relative';
+                btn.parentElement.appendChild(hint);
+                btn.addEventListener('mouseenter', () => hint.style.opacity = '1');
+                btn.addEventListener('mouseleave', () => hint.style.opacity = '0');
+            };
+            addKeyboardHint(prevBtn, 'prev');
+            addKeyboardHint(nextBtn, 'next');
+        });
+
+        // Documents functionality
+        let allDocuments = [];
+
+        function loadDocuments() {
+            // Retrieve documents from localStorage
+            const saved = localStorage.getItem('docgen_documents');
+            allDocuments = saved ? JSON.parse(saved) : [];
+            renderDocuments();
+            updateStats();
+        }
+
+        function renderDocuments(filter = '') {
+            const documentsList = document.getElementById('documentsList');
+            const empty = document.getElementById('documentsEmpty');
+            
+            let filtered = allDocuments;
+            if (filter) {
+                filtered = allDocuments.filter(d => 
+                    d.title.toLowerCase().includes(filter.toLowerCase())
+                );
+            }
+
+            if (filtered.length === 0) {
+                documentsList.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            documentsList.style.display = 'block';
+            empty.style.display = 'none';
+
+            documentsList.innerHTML = filtered.map(doc => `
+                <div class="document-item">
+                    <div class="document-header">
+                        <div class="document-title">${doc.title}</div>
+                        <div class="document-meta">
+                            <span class="document-date">${new Date(doc.created).toLocaleDateString()}</span>
+                            <span class="document-provider">${doc.provider}</span>
+                        </div>
+                    </div>
+                    <div class="document-footer">
+                        <button class="btn btn-secondary" onclick="downloadDocument('${doc.id}')" style="flex: 1; margin-right: 8px;">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        <button class="btn btn-secondary" onclick="deleteDocument('${doc.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function downloadDocument(docId) {
+            const doc = allDocuments.find(d => d.id === docId);
+            if (!doc) return;
+            
+            const link = document.createElement('a');
+            link.href = doc.pdfUrl;
+            link.download = doc.filename;
+            link.click();
+        }
+
+        function deleteDocument(docId) {
+            if (confirm('Delete this document?')) {
+                allDocuments = allDocuments.filter(d => d.id !== docId);
+                localStorage.setItem('docgen_documents', JSON.stringify(allDocuments));
+                renderDocuments();
+                updateStats();
+            }
+        }
+
+        // Search and filter
+        const searchInput = document.getElementById('documentsSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                renderDocuments(e.target.value);
+            });
+        }
+
+        // Settings functionality
+        function initializeSettings() {
+            // Load preferences
+            const defaultProvider = localStorage.getItem('defaultProvider') || 'gemini';
+            const defaultLength = localStorage.getItem('defaultLength') || '2';
+            const defaultTemp = localStorage.getItem('defaultTemperature') || '0.7';
+
+            document.getElementById('defaultProvider').value = defaultProvider;
+            document.getElementById('defaultLength').value = defaultLength;
+            document.getElementById('defaultTemperature').value = defaultTemp;
+            document.getElementById('tempValue').textContent = defaultTemp;
+
+            // Check PWA status
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                document.getElementById('pwaStatus').textContent = 'Installed';
+            }
+
+            // Get storage usage
+            if (navigator.storage && navigator.storage.estimate) {
+                navigator.storage.estimate().then(estimate => {
+                    const used = (estimate.usage / 1024 / 1024).toFixed(2);
+                    const quota = (estimate.quota / 1024 / 1024).toFixed(2);
+                    document.getElementById('storageUsage').textContent = `${used} MB / ${quota} MB`;
+                });
+            }
+
+            // Event listeners
+            document.getElementById('defaultTemperature').addEventListener('input', (e) => {
+                document.getElementById('tempValue').textContent = e.target.value;
+                localStorage.setItem('defaultTemperature', e.target.value);
+            });
+
+            document.getElementById('defaultProvider').addEventListener('change', (e) => {
+                localStorage.setItem('defaultProvider', e.target.value);
+            });
+
+            document.getElementById('defaultLength').addEventListener('change', (e) => {
+                localStorage.setItem('defaultLength', e.target.value);
+            });
+
+            // API Key handlers
+            document.getElementById('testGemini')?.addEventListener('click', () => testConnection('gemini'));
+            document.getElementById('testOpenAI')?.addEventListener('click', () => testConnection('openai'));
+            document.getElementById('testOpenRouter')?.addEventListener('click', () => testConnection('openrouter'));
+
+            document.getElementById('saveGemini')?.addEventListener('click', () => saveApiKey('gemini'));
+            document.getElementById('saveOpenAI')?.addEventListener('click', () => saveApiKey('openai'));
+            document.getElementById('saveOpenRouter')?.addEventListener('click', () => saveApiKey('openrouter'));
+
+            document.getElementById('clearCacheBtn')?.addEventListener('click', clearCache);
+        }
+
+        function testConnection(provider) {
+            const btn = document.getElementById(`test${provider.charAt(0).toUpperCase() + provider.slice(1)}`);
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+            
+            // Simulate test (would call API in production)
+            setTimeout(() => {
+                showAlert('success', `${provider} connection successful!`);
+                btn.disabled = false;
+                btn.innerHTML = 'Test Connection';
+            }, 1000);
+        }
+
+        function saveApiKey(provider) {
+            const key = document.getElementById(`${provider}Key`)?.value;
+            if (!key) {
+                showAlert('danger', 'Please enter an API key');
+                return;
+            }
+            localStorage.setItem(`apikey_${provider}`, key);
+            showAlert('success', `${provider} API key saved`);
+        }
+
+        function clearCache() {
+            if (confirm('Clear all cached data?')) {
+                localStorage.clear();
+                allDocuments = [];
+                showAlert('success', 'Cache cleared');
+                initializeSettings();
+            }
+        }
+
+        function updateStats() {
+            const docCount = allDocuments.length;
+            const totalTokens = allDocuments.reduce((sum, d) => sum + (d.tokens || 0), 0);
+            document.getElementById('statDocuments').textContent = docCount;
+            document.getElementById('statTokens').textContent = totalTokens.toLocaleString();
+        }
+
+        // Handle file selection: add to pendingFiles and show in UI
+        function handleFiles(event) {
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) return;
+
+            for (let file of files) {
+                // Avoid dupes by name + size
+                const exists = pendingFiles.some(f => f.name === file.name && f.size === file.size);
+                if (!exists) pendingFiles.push(file);
+            }
+
+            renderPendingFiles();
+        }
+
+        function renderPendingFiles() {
+            if (!pendingFiles.length) {
+                fileList.innerHTML = '<div class="text-center text-muted mt-3">No files selected</div>';
+                nextBtn1.disabled = true;
+                updateNavigationButtons();
+                return;
+            }
+
+            fileList.innerHTML = pendingFiles.map((f, i) => `
+                <div class="file-item" data-index="${i}">
+                    <div class="file-icon"><i class="fas fa-check-circle" style="color: var(--success-color);"></i></div>
+                    <div class="file-details">
+                        <div class="file-name">${f.name}</div>
+                        <div class="file-size">${(f.size / 1000).toFixed(1)} KB • Ready</div>
+                    </div>
+                    <div class="file-remove" data-index="${i}"><i class="fas fa-times"></i></div>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            document.querySelectorAll('.file-remove').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const idx = parseInt(el.getAttribute('data-index'));
+                    pendingFiles.splice(idx, 1);
+                    renderPendingFiles();
+                });
+            });
+
+            nextBtn1.disabled = false;
+            updateNavigationButtons();
+        }
+
+        async function uploadSelectedFiles() {
+            if (!pendingFiles.length) return;
+
+            const formData = new FormData();
+            for (let file of pendingFiles) {
+                formData.append('files', file);
+            }
+            // If there's an existing uploadId, append to it
+            if (uploadId) formData.append('upload_id', uploadId);
+
+            fileList.innerHTML = '<div class="text-center text-muted mt-3"><i class="fas fa-spinner fa-spin"></i> Uploading...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    showAlert('danger', `Upload failed: ${error.detail || 'Unknown error'}`);
+                    pendingFiles = [];
+                    renderPendingFiles();
+                    return;
+                }
+
+                const data = await response.json();
+                uploadId = data.upload_id;
+                // Display uploaded files (server returns the files array for combined upload)
+                displayUploadedFiles(data.files);
+                pendingFiles = [];
+                nextBtn1.disabled = false;
+                updateNavigationButtons();
+                
+            } catch (error) {
+                showAlert('danger', `Error: ${error.message}`);
+                renderPendingFiles();
+            }
+        }
+
+        // Display uploaded files
+        function displayUploadedFiles(files) {
+            // Show summary + files with upload confirmation
+            const totalChars = files.reduce((s, f) => s + (f.char_count || 0), 0);
+            const header = `
+                <div class="mb-3" style="padding: 12px; background: rgba(52, 168, 83, 0.1); border-radius: 6px; border-left: 3px solid var(--success-color);">
+                    <i class="fas fa-check-circle" style="color: var(--success-color); margin-right: 8px;"></i>
+                    <strong>${files.length} file${files.length !== 1 ? 's' : ''} uploaded successfully</strong>
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px;">Combined: <strong>${(totalChars/1000).toFixed(1)}k</strong> chars</div>
+                </div>
+            `;
+            fileList.innerHTML = header + files.map((f,i) => `
+                <div class="file-item" data-index="${i}">
+                    <div class="file-icon"><i class="fas fa-check-circle" style="color: var(--success-color);"></i></div>
+                    <div class="file-details">
+                        <div class="file-name">${f.filename}</div>
+                        <div class="file-size">${(f.char_count / 1000).toFixed(1)}k chars</div>
+                    </div>
+                </div>
+            `).join('') + `
+                <div class="mt-2">
+                    <button class="btn btn-secondary" id="appendMoreBtn">Add more files</button>
+                </div>
+            `;
+
+            // setup add more button
+            const appendBtn = document.getElementById('appendMoreBtn');
+            if (appendBtn) appendBtn.addEventListener('click', () => {
+                // switch back to upload section so user can add more
+                goToSection(1);
+            });
+        }
+
+        // Load providers from backend
+        async function loadProviders() {
+            try {
+                const response = await fetch(`${API_BASE}providers`);
+                if (!response.ok) throw new Error('Failed to load providers');
+                const data = await response.json();
+                // Response is { providers: { providerKey: {name, models, default}, ... } }
+                availableProviders = data.providers || {};
+
+                // Populate provider select with human name labels
+                providerSelect.innerHTML = Object.keys(availableProviders).map(providerKey => {
+                    const p = availableProviders[providerKey];
+                    const label = p?.name || providerKey;
+                    return `<option value="${providerKey}">${label}</option>`;
+                }).join('');
+
+                // Pre-select provider from localStorage or use default
+                const savedProvider = localStorage.getItem('defaultProvider');
+                const initialProvider = savedProvider && availableProviders[savedProvider] 
+                    ? savedProvider 
+                    : (providerSelect.value || Object.keys(availableProviders)[0]);
+                providerSelect.value = initialProvider;
+                loadModels(initialProvider);
+
+                providerSelect.addEventListener('change', (e) => {
+                    localStorage.setItem('defaultProvider', e.target.value);
+                    loadModels(e.target.value);
+                });
+            } catch (error) {
+                console.error('Error loading providers:', error);
+            }
+        }
+
+        function loadModels(providerKey) {
+            const provider = availableProviders[providerKey];
+            const models = provider?.models || [];
+
+            // Use model.id as value and model.name as label
+            modelSelect.innerHTML = models.map(model => 
+                `<option value="${model.id}">${model.name}</option>`
+            ).join('');
+
+            // Pre-select model from localStorage or use provider default
+            const savedModelForProvider = localStorage.getItem(`defaultModel_${providerKey}`);
+            if (savedModelForProvider && models.find(m => m.id === savedModelForProvider)) {
+                modelSelect.value = savedModelForProvider;
+            } else if (provider && provider.default) {
+                modelSelect.value = provider.default;
+            }
+            
+            // Save model selection when changed
+            modelSelect.addEventListener('change', (e) => {
+                localStorage.setItem(`defaultModel_${providerKey}`, e.target.value);
+            }, { once: true });
+        }
+
+        function goToSection(section) {
+            // Validate section bounds
+            if (section < 1 || section > 3) return;
+            
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelector(`[data-section="${section}"]`).classList.add('active');
+            currentSection = section;
+            
+            // Update title
+            const titleSpan = document.querySelector('.card-title span');
+            const titles = { 1: 'Upload', 2: 'Generate', 3: 'Download' };
+            titleSpan.textContent = titles[section];
+            
+            // Update step indicator
+            stepIndicator.textContent = `${section} / 3`;
+            
+            // Update navigation buttons
+            prevBtn.disabled = section === 1;
+            nextBtn.disabled = section === 3 || (section === 2 && !canProceedToGenerate());
+        }
+        
+        function canProceedToGenerate() {
+            return uploadId && promptInput.value.trim().length > 0;
+        }
+        
+        function updateNavigationButtons() {
+            prevBtn.disabled = currentSection === 1;
+            // Allow proceeding from section 1 with or without upload, section 2 needs prompt
+            nextBtn.disabled = currentSection === 3 || (currentSection === 2 && !canProceedToGenerate());
+        }
+
+        // Generate document
+        async function generateDocument() {
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                showAlert('danger', 'Please enter a prompt.');
+                return;
+            }
+            
+            const docTitle = document.getElementById('docTitleInput')?.value.trim() || 'Generated Document';
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            // Disable navigation during generation
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+
+            try {
+                const requestBody = {
+                    prompt: prompt,
+                    title: docTitle,
+                    provider: document.getElementById('provider').value || 'gemini',
+                    model: document.getElementById('model').value || undefined,
+                    temperature: 0.7,
+                    length: parseInt(document.getElementById('length').value) || 1,
+                };
+                
+                // Only include upload_id if files were uploaded
+                if (uploadId) {
+                    requestBody.upload_id = uploadId;
+                }
+                
+                const response = await fetch(`${API_BASE}generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Generation failed');
+                }
+
+                const data = await response.json();
+                const jobId = data.job_id;
+
+                goToSection(3);
+                pollJobStatus(jobId);
+            } catch (error) {
+                showAlert('danger', `Error: ${error.message}`);
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = 'Generate';
+                // Re-enable navigation on error
+                updateNavigationButtons();
+            }
+        }
+
+        // Poll job status
+        async function pollJobStatus(jobId) {
+            statusContainer.innerHTML = `
+                <div class="text-center">
+                    <h4 class="mb-3">Generating...</h4>
+                    <div class="progress-container">
+                        <div class="progress-bar indeterminate"></div>
+                    </div>
+                    <p class="text-muted mt-3">This may take a moment.</p>
+                </div>
+            `;
+
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}status/${jobId}`);
+                    if (!response.ok) throw new Error('Status check failed');
+
+                    const data = await response.json();
+
+                    if (data.status === 'processing') {
+                        // Update if we had real progress
+                    } else if (data.status === 'completed') {
+                        clearInterval(interval);
+                        
+                        // Get the document title that was entered before generation
+                        const savedTitle = document.getElementById('docTitleInput')?.value || 'Generated Document';
+                        
+                        statusContainer.innerHTML = `
+                            <div class="text-center">
+                                <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;"></i>
+                                <h4 class="mb-3">Document Complete!</h4>
+                                <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 1.5rem;">"${savedTitle}"</p>
+                                <div class="d-flex gap-3 justify-center" style="margin-bottom: 1rem;">
+                                    <button class="btn btn-secondary" onclick="downloadDocument('${jobId}', '${savedTitle.replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-download"></i> Download PDF
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        // Re-enable navigation after completion
+                        updateNavigationButtons();
+                    } else if (data.status === 'failed') {
+                        clearInterval(interval);
+                        statusContainer.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> ${data.error || 'Generation failed'}
+                            </div>
+                        `;
+                        // Re-enable navigation on failure
+                        updateNavigationButtons();
+                    }
+                } catch (error) {
+                    clearInterval(interval);
+                    showAlert('danger', `Error: ${error.message}`);
+                }
+            }, 2000);
+        }
+
+        // Helper functions
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `<i class="fas fa-${type === 'danger' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+            
+            const container = document.querySelector('.section.active');
+            container.insertBefore(alertDiv, container.firstChild);
+
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        function downloadDocument(jobId, docTitle) {
+            const title = docTitle || 'Generated Document';
+            const newDoc = {
+                id: jobId,
+                title: title,
+                created: new Date().toISOString(),
+                provider: document.getElementById('provider').value,
+                model: document.getElementById('model').value || 'default',
+                tokens: 0,
+                pdfUrl: `${API_BASE}download/${jobId}`,
+                filename: `${title.replace(/\s+/g, '_')}.pdf`
+            };
+            
+            allDocuments.unshift(newDoc);
+            localStorage.setItem('docgen_documents', JSON.stringify(allDocuments));
+            updateStats();
+            showAlert('success', `Document "${title}" saved!`);
+            
+            // Trigger download
+            const link = document.createElement('a');
+            link.href = `${API_BASE}download/${jobId}`;
+            link.download = newDoc.filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function reset() {
+            uploadId = null;
+            fileInput.value = '';
+            fileList.innerHTML = '';
+            promptInput.value = '';
+            statusContainer.innerHTML = '';
+            nextBtn1.disabled = true;
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = 'Generate';
+            goToSection(1);
+            updateNavigationButtons();
+        }
+    </script>
+</body>
+</html>
