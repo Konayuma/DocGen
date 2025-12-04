@@ -93,14 +93,14 @@
                         <i class="fas fa-plus" style="font-size: 1rem; margin-left: -10px; vertical-align: top;"></i>
                     </div>
                     <div class="upload-text">Drop your file(s) here or <a href="#" class="browse-link">browse</a></div>
-                    <div class="upload-subtext">Max. file size 25 MB • Optional: Skip to generate from prompt only</div>
+                    <div class="upload-subtext">Max. file size 25 MB • Or skip upload and go to prompt</div>
                 </div>
                 <input type="file" id="fileInput" multiple style="display: none;">
 
                 <div id="fileList"></div>
 
-                <div class="d-flex justify-between mt-3" style="margin-top: auto; padding-top: 20px;">
-                    <button class="btn btn-secondary" id="skipUploadBtn" style="min-width: 100px;">Skip Upload</button>
+                <div class="d-flex justify-between mt-3" style="margin-top: auto; padding-top: 20px; align-items: center;">
+                    <a href="#" id="skipUploadLink" class="skip-link" style="color: var(--text-primary); font-size: 0.9rem;">Or skip upload and go to prompt</a>
                     <button class="btn btn-primary" id="nextBtn1" disabled style="min-width: 100px;">Save & Continue</button>
                 </div>
             </div>
@@ -467,12 +467,17 @@
                 if (uploadId) goToSection(2);
             });
             
-            // Skip upload button - go directly to generation
-            const skipUploadBtn = document.getElementById('skipUploadBtn');
-            if (skipUploadBtn) {
-                skipUploadBtn.addEventListener('click', () => {
+            // Skip upload link - go directly to generation
+            const skipUploadLink = document.getElementById('skipUploadLink');
+            if (skipUploadLink) {
+                skipUploadLink.addEventListener('click', (e) => {
+                    e.preventDefault();
                     uploadId = null; // Clear any existing upload
                     goToSection(2);
+                    // Focus the prompt input to encourage prompt-first generation
+                    setTimeout(() => {
+                        promptInput.focus();
+                    }, 150);
                 });
             }
             
@@ -510,6 +515,11 @@
             
             // Add keyboard hint tooltips on hover
             const addKeyboardHint = (btn, direction) => {
+                // Use localStorage to track whether we've shown the hint for this direction before
+                const storageKey = `docgen_keyboard_hint_shown_${direction}`;
+                // If we've already shown the hint for this direction, don't add it again
+                if (localStorage.getItem(storageKey)) return;
+
                 const hint = document.createElement('div');
                 hint.className = 'keyboard-hint';
                 hint.textContent = `Alt + ${direction === 'prev' ? '←' : '→'}`;
@@ -531,8 +541,30 @@
                 `;
                 btn.parentElement.style.position = 'relative';
                 btn.parentElement.appendChild(hint);
-                btn.addEventListener('mouseenter', () => hint.style.opacity = '1');
-                btn.addEventListener('mouseleave', () => hint.style.opacity = '0');
+
+                // Named functions so we can remove listeners after first use
+                const showHint = () => {
+                    hint.style.opacity = '1';
+                    // Mark as shown so it won't be shown again in the future
+                    try { localStorage.setItem(storageKey, '1'); } catch (e) { /* ignore */ }
+                    // Remove event listeners so it won't re-appear on hover
+                    btn.removeEventListener('mouseenter', showHint);
+                    btn.removeEventListener('mouseleave', hideHint);
+                    // Hide and remove hint after a timeout
+                    setTimeout(() => {
+                        hint.style.opacity = '0';
+                        setTimeout(() => {
+                            try { hint.remove(); } catch (e) { /* ignore */ }
+                        }, 300);
+                    }, 2500);
+                };
+
+                const hideHint = () => {
+                    hint.style.opacity = '0';
+                };
+
+                btn.addEventListener('mouseenter', showHint);
+                btn.addEventListener('mouseleave', hideHint);
             };
             addKeyboardHint(prevBtn, 'prev');
             addKeyboardHint(nextBtn, 'next');
@@ -905,7 +937,8 @@
         }
         
         function canProceedToGenerate() {
-            return uploadId && promptInput.value.trim().length > 0;
+            // Allow generating if a prompt has been entered, regardless of whether uploadId exists
+            return promptInput && promptInput.value.trim().length > 0;
         }
         
         function updateNavigationButtons() {
