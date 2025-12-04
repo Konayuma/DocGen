@@ -1,0 +1,23 @@
+# Render service manifest for DocGen
+# Note: Set secrets and API keys using Render Dashboard or the CLI after creating the service.
+services:
+  - name: docgen
+    type: web
+    env: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: MAX_FILE_SIZE_MB
+        value: "50"
+
+# Optional: Add secrets via the Render UI. Do not commit real keys to your repo.
+# Secrets to add in the Render UI:
+# - GEMINI_API_KEY
+# - OPENAI_API_KEY
+# - OPENROUTER_API_KEY

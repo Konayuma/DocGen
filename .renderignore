@@ -1,0 +1,17 @@
+# Files and directories to ignore for Render service uploads
+venv/
+.venv/
+node_modules/
+.git/
+tests/
+temp/
+__pycache__/
+*.pyc
+.env
+.env.local
+.env.*
+Dockerfile
+README.md
+QUICKSTART.md
+UV_SETUP.md
+.github/

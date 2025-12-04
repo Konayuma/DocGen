@@ -1,0 +1,18 @@
+# Ignore things that shouldn't be sent to Docker build context
+venv
+.venv
+node_modules
+.git
+tests
+temp
+__pycache__
+*.pyc
+coverage.xml
+dist
+build
+.env
+.env.*
+README.md
+QUICKSTART.md
+UV_SETUP.md
+.github
